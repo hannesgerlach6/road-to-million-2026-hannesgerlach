@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/prayer-check?phone=$PHONE&city=$CITY&secret=$CRON_SECRET",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/morning-summary?phone=$PHONE&city=$CITY&secret=$CRON_SECRET",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/evening-check?phone=$PHONE&secret=$CRON_SECRET",
+      "schedule": "0 21 * * *"
+    }
+  ]
+}

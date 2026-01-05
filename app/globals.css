@@ -74,9 +74,85 @@ input[type="checkbox"] {
   accent-color: #d4a017;
 }
 
+/* Input Styles */
+input[type="text"],
+input[type="tel"],
+select {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(212, 160, 23, 0.3);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+input[type="text"]:focus,
+input[type="tel"]:focus,
+select:focus {
+  outline: none;
+  border-color: #d4a017;
+  box-shadow: 0 0 0 2px rgba(212, 160, 23, 0.2);
+}
+
+/* Button Styles */
+.btn-gold {
+  background: linear-gradient(135deg, #d4a017 0%, #ca8a04 100%);
+  color: #0f172a;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-gold:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(212, 160, 23, 0.4);
+}
+
+.btn-gold:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* Animation Delays */
 .delay-100 { animation-delay: 100ms; }
 .delay-200 { animation-delay: 200ms; }
 .delay-300 { animation-delay: 300ms; }
 .delay-400 { animation-delay: 400ms; }
 .delay-500 { animation-delay: 500ms; }
+
+/* Toast Notification */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: #1e293b;
+  border: 1px solid rgba(212, 160, 23, 0.5);
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  color: white;
+  z-index: 1000;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Tab Navigation */
+.tab-active {
+  background: rgba(212, 160, 23, 0.2);
+  border-color: #d4a017;
+  color: #d4a017;
+}
