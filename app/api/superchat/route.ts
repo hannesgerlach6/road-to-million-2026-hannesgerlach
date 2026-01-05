@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { sendWhatsAppMessage, MessageTemplates } from '@/lib/superchat'
+import { sendSMS, MessageTemplates } from '@/lib/twilio'
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,11 +38,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Unbekannter Nachrichtentyp' }, { status: 400 })
     }
 
-    console.log('Sending message type:', type, 'to:', to)
-    const result = await sendWhatsAppMessage({ to, message })
+    console.log('Sending SMS type:', type, 'to:', to)
+    const result = await sendSMS({ to, message })
 
     if (result.success) {
-      return NextResponse.json({ success: true, message: 'Nachricht gesendet!' })
+      return NextResponse.json({ success: true, message: 'SMS gesendet!' })
     } else {
       return NextResponse.json({ success: false, error: result.error }, { status: 500 })
     }

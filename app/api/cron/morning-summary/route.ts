@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { sendWhatsAppMessage, MessageTemplates } from '@/lib/superchat'
+import { sendSMS, MessageTemplates } from '@/lib/twilio'
 
 // Call this at 6:00 AM via external cron
 
@@ -37,24 +37,17 @@ export async function GET(request: NextRequest) {
         { name: 'Maghrib', time: timings.Maghrib },
         { name: 'Isha', time: timings.Isha },
       ],
-      meals: [
-        { time: '08:00', name: 'Frühstück' },
-        { time: '12:30', name: 'Mittagessen' },
-        { time: '19:00', name: 'Abendessen' },
-      ],
       habits: [
-        'Koran lesen',
-        'Instagram Story posten',
-        'Reel posten',
-        'Buch lesen (30 Min)',
+        'Koran',
+        'Story',
+        'Reel',
+        'Lesen',
         'Dhikr',
       ],
-      workout: isWorkoutDay 
-        ? 'Heute ist Trainingstag! 💪\nKlimmzüge, Dips, Rudern, Pike Push-ups, Leg Raises' 
-        : undefined,
+      workout: isWorkoutDay ? 'Trainingstag!' : undefined,
     }
 
-    const result = await sendWhatsAppMessage({
+    const result = await sendSMS({
       to: phone,
       message: MessageTemplates.morningSummary(summaryData),
     })

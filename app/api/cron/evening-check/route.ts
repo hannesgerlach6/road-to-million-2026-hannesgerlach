@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { sendWhatsAppMessage, MessageTemplates } from '@/lib/superchat'
+import { sendSMS, MessageTemplates } from '@/lib/twilio'
 
 // Call this at 21:00 via external cron
 
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const total = habits.length
     const missing = habits.filter((h: any) => !h.completed).map((h: any) => h.name)
 
-    const result = await sendWhatsAppMessage({
+    const result = await sendSMS({
       to: phone,
       message: MessageTemplates.eveningCheck(completed, total, missing),
     })
@@ -59,11 +59,11 @@ export async function GET(request: NextRequest) {
 
   // Default habits if no body provided
   const defaultHabits = [
-    { name: 'Koran lesen', completed: false },
+    { name: 'Koran', completed: false },
     { name: 'Workout', completed: false },
-    { name: 'Buch lesen', completed: false },
-    { name: 'Instagram Story', completed: false },
-    { name: 'Reel posten', completed: false },
+    { name: 'Lesen', completed: false },
+    { name: 'Story', completed: false },
+    { name: 'Reel', completed: false },
     { name: 'Dhikr', completed: false },
   ]
 
@@ -71,14 +71,14 @@ export async function GET(request: NextRequest) {
   const total = defaultHabits.length
   const missing = defaultHabits.map(h => h.name)
 
-  const result = await sendWhatsAppMessage({
+  const result = await sendSMS({
     to: phone,
     message: MessageTemplates.eveningCheck(completed, total, missing),
   })
 
   return NextResponse.json({
     success: result.success,
-    message: 'Evening check sent (default habits)',
+    message: 'Evening check sent',
   })
 }
 

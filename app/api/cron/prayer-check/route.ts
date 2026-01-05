@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { sendWhatsAppMessage, MessageTemplates } from '@/lib/superchat'
+import { sendSMS, MessageTemplates } from '@/lib/twilio'
 
 // This endpoint checks if a prayer is coming up in 10 minutes
 // Call this every 5 minutes via external cron (Make.com, cron-job.org, etc.)
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
       // If prayer is in 8-12 minutes (to account for cron timing)
       if (diff >= 8 && diff <= 12) {
-        const result = await sendWhatsAppMessage({
+        const result = await sendSMS({
           to: phone,
           message: MessageTemplates.prayerReminder(prayer.name, prayer.time),
         })
@@ -70,5 +70,4 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Vercel Cron Config (requires Pro plan)
 export const runtime = 'edge'

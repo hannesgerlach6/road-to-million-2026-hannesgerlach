@@ -78,14 +78,14 @@ export default function Einstellungen() {
         body: JSON.stringify({
           type: 'custom',
           to: settings.phone,
-          data: { message: '✅ *Test erfolgreich!*\n\nDeine Road to Million 2026 App ist verbunden.\n\nBismillah, let\'s go! 🔥' },
+          data: { message: '✅ Test erfolgreich!\n\nDeine Road to Million 2026 App ist verbunden.\n\nBismillah! 🔥' },
         }),
       })
 
       const result = await response.json()
       
       if (result.success) {
-        setTestResult('✅ Test-Nachricht gesendet! Check WhatsApp.')
+        setTestResult('✅ Test-SMS gesendet! Check dein Handy.')
       } else {
         setTestResult('❌ Fehler: ' + (result.error || 'Unbekannt'))
       }
@@ -118,7 +118,7 @@ export default function Einstellungen() {
           <div className="bg-dark-900/50 gold-border rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-4">
               <Phone className="w-5 h-5 text-gold-400" />
-              <h2 className="text-lg font-display text-white">WhatsApp Nummer</h2>
+              <h2 className="text-lg font-display text-white">Handynummer für SMS</h2>
             </div>
             <p className="text-dark-400 text-sm mb-4">
               Deine Nummer mit Ländervorwahl (z.B. +491234567890)
@@ -131,7 +131,7 @@ export default function Einstellungen() {
               className="w-full"
             />
             <p className="text-dark-500 text-xs mt-2">
-              Diese Nummer muss bei Superchat hinterlegt sein
+              SMS Notifications via Twilio
             </p>
           </div>
 
@@ -161,8 +161,8 @@ export default function Einstellungen() {
               <div className="flex items-center gap-3">
                 <Bell className="w-5 h-5 text-gold-400" />
                 <div>
-                  <h2 className="text-lg font-display text-white">Notifications</h2>
-                  <p className="text-dark-400 text-sm">WhatsApp Benachrichtigungen aktivieren</p>
+                  <h2 className="text-lg font-display text-white">SMS Notifications</h2>
+                  <p className="text-dark-400 text-sm">SMS Benachrichtigungen aktivieren</p>
                 </div>
               </div>
               <button
@@ -182,9 +182,9 @@ export default function Einstellungen() {
 
           {/* Test Notification */}
           <div className="bg-dark-900/50 gold-border rounded-2xl p-6">
-            <h2 className="text-lg font-display text-white mb-4">Test Notification</h2>
+            <h2 className="text-lg font-display text-white mb-4">Test SMS</h2>
             <p className="text-dark-400 text-sm mb-4">
-              Sende eine Test-Nachricht um die Verbindung zu prüfen
+              Sende eine Test-SMS um die Verbindung zu prüfen
             </p>
             <button
               onClick={handleTestNotification}
@@ -199,7 +199,7 @@ export default function Einstellungen() {
               ) : (
                 <>
                   <Bell className="w-4 h-4" />
-                  Test senden
+                  Test SMS senden
                 </>
               )}
             </button>
@@ -231,26 +231,26 @@ export default function Einstellungen() {
 
         {/* API Endpoints Info */}
         <div className="mt-8 bg-dark-900/30 rounded-2xl p-6">
-          <h3 className="text-gold-400 font-display mb-4">🔧 Automatische Notifications (Optional)</h3>
+          <h3 className="text-gold-400 font-display mb-4">🔧 Twilio Setup</h3>
           <p className="text-dark-400 text-sm mb-4">
-            Für automatische Notifications kannst du diese Endpoints mit Make.com oder cron-job.org aufrufen:
+            Für SMS Notifications brauchst du diese Vercel Environment Variables:
           </p>
           <div className="space-y-3 text-xs font-mono">
             <div className="bg-dark-800 p-3 rounded-lg">
-              <p className="text-dark-400 mb-1">Gebetszeit Check (alle 5 Min):</p>
-              <p className="text-gold-300 break-all">/api/cron/prayer-check?phone=NUMMER&city=STADT&secret=CRON_SECRET</p>
+              <p className="text-dark-400 mb-1">Account SID:</p>
+              <p className="text-gold-300">TWILIO_ACCOUNT_SID</p>
             </div>
             <div className="bg-dark-800 p-3 rounded-lg">
-              <p className="text-dark-400 mb-1">Morgen-Summary (6:00 Uhr):</p>
-              <p className="text-gold-300 break-all">/api/cron/morning-summary?phone=NUMMER&city=STADT&secret=CRON_SECRET</p>
+              <p className="text-dark-400 mb-1">Auth Token:</p>
+              <p className="text-gold-300">TWILIO_AUTH_TOKEN</p>
             </div>
             <div className="bg-dark-800 p-3 rounded-lg">
-              <p className="text-dark-400 mb-1">Abend-Check (21:00 Uhr):</p>
-              <p className="text-gold-300 break-all">/api/cron/evening-check?phone=NUMMER&secret=CRON_SECRET</p>
+              <p className="text-dark-400 mb-1">Twilio Nummer:</p>
+              <p className="text-gold-300">TWILIO_PHONE_NUMBER</p>
             </div>
           </div>
           <p className="text-dark-500 text-xs mt-4">
-            CRON_SECRET muss in Vercel Environment Variables gesetzt werden.
+            Findest du alles unter twilio.com → Console → Account Info
           </p>
         </div>
       </div>
