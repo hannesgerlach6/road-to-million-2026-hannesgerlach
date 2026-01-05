@@ -8,7 +8,8 @@ import {
   ChevronRight, Flame, Trophy, Star,
   Calendar, TrendingUp, Heart, Zap,
   Settings, Send, Bell, MapPin,
-  MessageCircle, Coffee, ChefHat
+  MessageCircle, Coffee, ChefHat,
+  CalendarDays, CalendarRange, LayoutGrid
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -54,6 +55,8 @@ interface UserSettings {
   notificationsEnabled: boolean
 }
 
+type ViewMode = 'day' | 'week' | 'month'
+
 // Toast Component
 function Toast({ message, type = 'success', onClose }: { message: string; type?: 'success' | 'error'; onClose: () => void }) {
   useEffect(() => {
@@ -73,12 +76,16 @@ function Toast({ message, type = 'success', onClose }: { message: string; type?:
   )
 }
 
-// Prayer Times Component
+// Prayer Times Component with Start-End Times
 function PrayerTimesWidget({ city, onSendReminder }: { city: string; onSendReminder: (prayer: string, time: string) => void }) {
   const [prayerTimes, setPrayerTimes] = useState<PrayerTimes | null>(null)
-  const [currentTime, setCurrentTime] = useState(new Date())
   const [nextPrayer, setNextPrayer] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     const fetchPrayerTimes = async () => {
@@ -95,34 +102,53 @@ function PrayerTimesWidget({ city, onSendReminder }: { city: string; onSendRemin
       }
     }
     fetchPrayerTimes()
-
-    const interval = setInterval(() => setCurrentTime(new Date()), 60000)
-    return () => clearInterval(interval)
   }, [city])
 
   useEffect(() => {
-    if (!prayerTimes) return
+    if (!prayerTimes || !mounted) return
 
-    const now = currentTime
-    const prayers = [
-      { name: 'Fajr', time: prayerTimes.Fajr },
-      { name: 'Dhuhr', time: prayerTimes.Dhuhr },
-      { name: 'Asr', time: prayerTimes.Asr },
-      { name: 'Maghrib', time: prayerTimes.Maghrib },
-      { name: 'Isha', time: prayerTimes.Isha },
-    ]
+    const checkNextPrayer = () => {
+      const now = new Date()
+      const prayers = [
+        { name: 'Fajr', time: prayerTimes.Fajr },
+        { name: 'Dhuhr', time: prayerTimes.Dhuhr },
+        { name: 'Asr', time: prayerTimes.Asr },
+        { name: 'Maghrib', time: prayerTimes.Maghrib },
+        { name: 'Isha', time: prayerTimes.Isha },
+      ]
 
-    for (const prayer of prayers) {
-      const [hours, minutes] = prayer.time.split(':').map(Number)
-      const prayerTime = new Date(now)
-      prayerTime.setHours(hours, minutes, 0)
-      
-      if (prayerTime > now) {
-        setNextPrayer(prayer.name)
-        break
+      for (const prayer of prayers) {
+        const [hours, minutes] = prayer.time.split(':').map(Number)
+        const prayerTime = new Date(now)
+        prayerTime.setHours(hours, minutes, 0)
+        
+        if (prayerTime > now) {
+          setNextPrayer(prayer.name)
+          return
+        }
       }
+      setNextPrayer('Fajr') // Nach Isha ist Fajr das nächste
     }
-  }, [prayerTimes, currentTime])
+
+    checkNextPrayer()
+    const interval = setInterval(checkNextPrayer, 60000)
+    return () => clearInterval(interval)
+  }, [prayerTimes, mounted])
+
+  // Get end time for each prayer (when next prayer starts)
+  const getPrayerEndTime = (prayerName: string): string => {
+    if (!prayerTimes) return ''
+    const order = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']
+    const idx = order.indexOf(prayerName)
+    if (idx === -1) return ''
+    
+    // Special cases
+    if (prayerName === 'Fajr') return prayerTimes.Sunrise
+    if (prayerName === 'Isha') return '23:59'
+    
+    const nextPrayerName = order[idx + 1]
+    return prayerTimes[nextPrayerName as keyof PrayerTimes] || ''
+  }
 
   const prayerIcons: Record<string, React.ReactNode> = {
     Fajr: <Sunrise className="w-5 h-5" />,
@@ -132,7 +158,7 @@ function PrayerTimesWidget({ city, onSendReminder }: { city: string; onSendRemin
     Isha: <Moon className="w-5 h-5" />,
   }
 
-  if (loading) {
+  if (loading || !mounted) {
     return (
       <div className="bg-dark-900/50 gold-border rounded-2xl p-6 animate-pulse">
         <div className="h-6 bg-dark-800 rounded w-1/3 mb-4"></div>
@@ -172,19 +198,26 @@ function PrayerTimesWidget({ city, onSendReminder }: { city: string; onSendRemin
               <span className={nextPrayer === prayer ? 'text-gold-400' : 'text-dark-400'}>
                 {prayerIcons[prayer]}
               </span>
-              <span className={`font-medium ${nextPrayer === prayer ? 'text-gold-300' : 'text-dark-200'}`}>
-                {prayer}
-              </span>
-              {nextPrayer === prayer && (
-                <span className="text-xs bg-gold-500/30 text-gold-300 px-2 py-0.5 rounded-full">
-                  Nächstes
+              <div>
+                <span className={`font-medium ${nextPrayer === prayer ? 'text-gold-300' : 'text-dark-200'}`}>
+                  {prayer}
                 </span>
-              )}
+                {nextPrayer === prayer && (
+                  <span className="ml-2 text-xs bg-gold-500/30 text-gold-300 px-2 py-0.5 rounded-full">
+                    Nächstes
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`font-mono ${nextPrayer === prayer ? 'text-gold-400' : 'text-dark-300'}`}>
-                {prayerTimes[prayer as keyof PrayerTimes]}
-              </span>
+              <div className="text-right">
+                <span className={`font-mono ${nextPrayer === prayer ? 'text-gold-400' : 'text-dark-300'}`}>
+                  {prayerTimes[prayer as keyof PrayerTimes]}
+                </span>
+                <span className="text-dark-500 text-xs ml-1">
+                  - {getPrayerEndTime(prayer)}
+                </span>
+              </div>
               <button
                 onClick={() => onSendReminder(prayer, prayerTimes[prayer as keyof PrayerTimes])}
                 className="p-1.5 rounded-lg bg-dark-700 hover:bg-dark-600 text-dark-400 hover:text-gold-400 transition-all"
@@ -489,12 +522,296 @@ function QuickActions({ onAction }: { onAction: (type: string) => void }) {
   )
 }
 
+// View Mode Selector
+function ViewSelector({ viewMode, setViewMode }: { viewMode: ViewMode; setViewMode: (v: ViewMode) => void }) {
+  return (
+    <div className="flex items-center gap-2 bg-dark-800/50 p-1 rounded-xl">
+      <button
+        onClick={() => setViewMode('day')}
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+          viewMode === 'day' ? 'bg-gold-500/20 text-gold-400' : 'text-dark-400 hover:text-dark-200'
+        }`}
+      >
+        <Calendar className="w-4 h-4" />
+        <span className="text-sm">Tag</span>
+      </button>
+      <button
+        onClick={() => setViewMode('week')}
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+          viewMode === 'week' ? 'bg-gold-500/20 text-gold-400' : 'text-dark-400 hover:text-dark-200'
+        }`}
+      >
+        <CalendarDays className="w-4 h-4" />
+        <span className="text-sm">Woche</span>
+      </button>
+      <button
+        onClick={() => setViewMode('month')}
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+          viewMode === 'month' ? 'bg-gold-500/20 text-gold-400' : 'text-dark-400 hover:text-dark-200'
+        }`}
+      >
+        <CalendarRange className="w-4 h-4" />
+        <span className="text-sm">Monat</span>
+      </button>
+    </div>
+  )
+}
+
+// Week View Component
+function WeekView({ habits, selectedDate, setSelectedDate }: { 
+  habits: Habit[]
+  selectedDate: Date
+  setSelectedDate: (d: Date) => void 
+}) {
+  const [weekData, setWeekData] = useState<Record<string, boolean>>({})
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    // Load week data from localStorage
+    const saved = localStorage.getItem('r2m-week-data')
+    if (saved) {
+      setWeekData(JSON.parse(saved))
+    }
+  }, [])
+
+  if (!mounted) return null
+
+  const getWeekDays = () => {
+    const days = []
+    const startOfWeek = new Date(selectedDate)
+    startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay() + 1) // Monday
+
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(startOfWeek)
+      day.setDate(startOfWeek.getDate() + i)
+      days.push(day)
+    }
+    return days
+  }
+
+  const weekDays = getWeekDays()
+  const dayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+
+  return (
+    <div className="bg-dark-900/50 gold-border rounded-2xl p-6">
+      <h2 className="text-xl font-display text-gold-400 mb-6 flex items-center gap-2">
+        <CalendarDays className="w-5 h-5" />
+        Wochenübersicht
+      </h2>
+
+      {/* Week Header */}
+      <div className="grid grid-cols-8 gap-2 mb-4">
+        <div></div>
+        {weekDays.map((day, i) => {
+          const isToday = day.toDateString() === new Date().toDateString()
+          const isSelected = day.toDateString() === selectedDate.toDateString()
+          return (
+            <button
+              key={i}
+              onClick={() => setSelectedDate(day)}
+              className={`text-center p-2 rounded-lg transition-all ${
+                isToday ? 'bg-gold-500/20 text-gold-400' : 
+                isSelected ? 'bg-dark-700 text-white' : 'text-dark-400 hover:bg-dark-800'
+              }`}
+            >
+              <div className="text-xs">{dayNames[i]}</div>
+              <div className="text-lg font-medium">{day.getDate()}</div>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Habits Grid */}
+      <div className="space-y-2">
+        {habits.map((habit) => (
+          <div key={habit.id} className="grid grid-cols-8 gap-2 items-center">
+            <div className="flex items-center gap-2 text-dark-300 text-sm truncate">
+              <span>{habit.icon}</span>
+              <span className="truncate">{habit.name}</span>
+            </div>
+            {weekDays.map((day, i) => {
+              const dateKey = day.toISOString().split('T')[0]
+              const habitKey = `${dateKey}-${habit.id}`
+              const isCompleted = weekData[habitKey] || false
+              const isToday = day.toDateString() === new Date().toDateString()
+              const isFuture = day > new Date()
+
+              return (
+                <button
+                  key={i}
+                  disabled={isFuture}
+                  onClick={() => {
+                    const newData = { ...weekData, [habitKey]: !isCompleted }
+                    setWeekData(newData)
+                    localStorage.setItem('r2m-week-data', JSON.stringify(newData))
+                  }}
+                  className={`h-8 rounded-lg flex items-center justify-center transition-all ${
+                    isFuture ? 'bg-dark-800/30 cursor-not-allowed' :
+                    isCompleted ? 'bg-green-500/30 text-green-400' : 
+                    isToday ? 'bg-gold-500/10 text-dark-500 hover:bg-gold-500/20' :
+                    'bg-dark-800/50 text-dark-500 hover:bg-dark-800'
+                  }`}
+                >
+                  {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+                </button>
+              )
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Month View Component  
+function MonthView({ habits, selectedDate, setSelectedDate }: {
+  habits: Habit[]
+  selectedDate: Date
+  setSelectedDate: (d: Date) => void
+}) {
+  const [monthData, setMonthData] = useState<Record<string, number>>({})
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    const saved = localStorage.getItem('r2m-week-data')
+    if (saved) {
+      const weekData = JSON.parse(saved)
+      // Count completed habits per day
+      const counts: Record<string, number> = {}
+      Object.keys(weekData).forEach(key => {
+        if (weekData[key]) {
+          const dateKey = key.split('-').slice(0, 3).join('-')
+          counts[dateKey] = (counts[dateKey] || 0) + 1
+        }
+      })
+      setMonthData(counts)
+    }
+  }, [])
+
+  if (!mounted) return null
+
+  const getDaysInMonth = () => {
+    const year = selectedDate.getFullYear()
+    const month = selectedDate.getMonth()
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+    const days = []
+    
+    // Add empty days for start of week
+    const startPadding = (firstDay.getDay() + 6) % 7 // Monday = 0
+    for (let i = 0; i < startPadding; i++) {
+      days.push(null)
+    }
+    
+    // Add days of month
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      days.push(new Date(year, month, i))
+    }
+    
+    return days
+  }
+
+  const days = getDaysInMonth()
+  const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
+
+  const changeMonth = (delta: number) => {
+    const newDate = new Date(selectedDate)
+    newDate.setMonth(newDate.getMonth() + delta)
+    setSelectedDate(newDate)
+  }
+
+  return (
+    <div className="bg-dark-900/50 gold-border rounded-2xl p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-display text-gold-400 flex items-center gap-2">
+          <CalendarRange className="w-5 h-5" />
+          {monthNames[selectedDate.getMonth()]} {selectedDate.getFullYear()}
+        </h2>
+        <div className="flex items-center gap-2">
+          <button onClick={() => changeMonth(-1)} className="p-2 bg-dark-800 rounded-lg hover:bg-dark-700">
+            <ChevronRight className="w-4 h-4 rotate-180 text-dark-400" />
+          </button>
+          <button onClick={() => changeMonth(1)} className="p-2 bg-dark-800 rounded-lg hover:bg-dark-700">
+            <ChevronRight className="w-4 h-4 text-dark-400" />
+          </button>
+        </div>
+      </div>
+
+      {/* Day Headers */}
+      <div className="grid grid-cols-7 gap-1 mb-2">
+        {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map(d => (
+          <div key={d} className="text-center text-dark-500 text-xs py-2">{d}</div>
+        ))}
+      </div>
+
+      {/* Calendar Grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((day, i) => {
+          if (!day) return <div key={i} className="h-10"></div>
+          
+          const dateKey = day.toISOString().split('T')[0]
+          const completedCount = monthData[dateKey] || 0
+          const isToday = day.toDateString() === new Date().toDateString()
+          const isSelected = day.toDateString() === selectedDate.toDateString()
+          
+          // Color based on completion
+          let bgColor = 'bg-dark-800/30'
+          if (completedCount >= 6) bgColor = 'bg-green-500/40'
+          else if (completedCount >= 4) bgColor = 'bg-green-500/25'
+          else if (completedCount >= 2) bgColor = 'bg-gold-500/20'
+          else if (completedCount >= 1) bgColor = 'bg-gold-500/10'
+
+          return (
+            <button
+              key={i}
+              onClick={() => setSelectedDate(day)}
+              className={`h-10 rounded-lg flex flex-col items-center justify-center transition-all ${bgColor} ${
+                isToday ? 'ring-2 ring-gold-500' : ''
+              } ${isSelected ? 'ring-2 ring-white' : ''}`}
+            >
+              <span className="text-sm text-dark-200">{day.getDate()}</span>
+              {completedCount > 0 && (
+                <span className="text-[10px] text-dark-400">{completedCount}/{habits.length}</span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center justify-center gap-4 mt-4 text-xs text-dark-400">
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded bg-dark-800/30"></div>
+          <span>0</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded bg-gold-500/20"></div>
+          <span>1-3</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded bg-green-500/25"></div>
+          <span>4-5</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded bg-green-500/40"></div>
+          <span>6+</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Main Dashboard
 export default function Dashboard() {
-  const [currentTime, setCurrentTime] = useState(new Date())
+  const [mounted, setMounted] = useState(false)
+  const [currentTime, setCurrentTime] = useState<Date | null>(null)
   const [greeting, setGreeting] = useState('')
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [sending, setSending] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>('day')
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
 
   // Settings State
   const [settings, setSettings] = useState<UserSettings>({
@@ -562,8 +879,16 @@ export default function Dashboard() {
     },
   ])
 
+  // Hydration fix - only run on client
+  useEffect(() => {
+    setMounted(true)
+    setCurrentTime(new Date())
+  }, [])
+
   // Load settings from localStorage
   useEffect(() => {
+    if (!mounted) return
+
     const savedSettings = localStorage.getItem('r2m-settings')
     if (savedSettings) {
       setSettings(JSON.parse(savedSettings))
@@ -583,41 +908,58 @@ export default function Dashboard() {
     if (savedWorkouts && workoutsDate === today) {
       setWorkouts(JSON.parse(savedWorkouts))
     }
-  }, [])
+  }, [mounted])
 
   // Save to localStorage
   useEffect(() => {
+    if (!mounted) return
     localStorage.setItem('r2m-settings', JSON.stringify(settings))
-  }, [settings])
+  }, [settings, mounted])
 
   useEffect(() => {
+    if (!mounted) return
     localStorage.setItem('r2m-habits', JSON.stringify(habits))
     localStorage.setItem('r2m-habits-date', new Date().toDateString())
-  }, [habits])
+  }, [habits, mounted])
 
   useEffect(() => {
+    if (!mounted) return
     localStorage.setItem('r2m-workouts', JSON.stringify(workouts))
     localStorage.setItem('r2m-workouts-date', new Date().toDateString())
-  }, [workouts])
+  }, [workouts, mounted])
 
   useEffect(() => {
+    if (!mounted) return
+
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
     
     const hour = new Date().getHours()
     if (hour < 12) setGreeting('Sabah al-Khair')
-    else if (hour < 17) setGreeting('Masa al-Khair')
     else setGreeting('Masa al-Khair')
     
     return () => clearInterval(timer)
-  }, [])
+  }, [mounted])
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | null) => {
+    if (!date) return ''
     return date.toLocaleDateString('de-DE', { 
       weekday: 'long', 
       day: 'numeric', 
       month: 'long',
       year: 'numeric'
     })
+  }
+
+  // Show loading state while hydrating
+  if (!mounted || !currentTime) {
+    return (
+      <main className="min-h-screen p-4 md:p-8 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-2 border-gold-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-dark-400">Lade...</p>
+        </div>
+      </main>
+    )
   }
 
   // Send notification
@@ -732,25 +1074,17 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Quick Stats */}
-      <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: 'Streak', value: `${Math.max(...habits.map(h => h.streak))} Tage`, icon: <Flame className="w-5 h-5 text-orange-500" /> },
-          { label: 'Habits', value: `${completedHabits}/${habits.length}`, icon: <CheckCircle2 className="w-5 h-5 text-green-500" /> },
-          { label: 'Workouts', value: '3/Woche', icon: <Dumbbell className="w-5 h-5 text-blue-500" /> },
-          { label: 'Stadt', value: settings.city, icon: <MapPin className="w-5 h-5 text-gold-500" /> },
-        ].map((stat, i) => (
-          <div 
-            key={i} 
-            className="bg-dark-900/50 gold-border rounded-xl p-4 flex items-center gap-3 card-hover"
+      {/* View Selector */}
+      <div className="max-w-7xl mx-auto mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <ViewSelector viewMode={viewMode} setViewMode={setViewMode} />
+        {viewMode !== 'day' && (
+          <button 
+            onClick={() => setSelectedDate(new Date())}
+            className="text-sm text-gold-400 hover:text-gold-300"
           >
-            {stat.icon}
-            <div>
-              <p className="text-dark-400 text-xs">{stat.label}</p>
-              <p className="text-white font-semibold">{stat.value}</p>
-            </div>
-          </div>
-        ))}
+            Heute
+          </button>
+        )}
       </div>
 
       {/* Phone Number Alert */}
@@ -768,15 +1102,54 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Main Grid */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <PrayerTimesWidget city={settings.city} onSendReminder={handlePrayerReminder} />
-        <HabitTracker habits={habits} setHabits={setHabits} />
-        <WorkoutWidget workouts={workouts} setWorkouts={setWorkouts} />
-        <MealPlanWidget meals={meals} onSendMealReminder={handleMealReminder} />
-        <GoalsWidget />
-        <QuickActions onAction={handleQuickAction} />
-      </div>
+      {/* Week View */}
+      {viewMode === 'week' && (
+        <div className="max-w-7xl mx-auto mb-8">
+          <WeekView habits={habits} selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
+        </div>
+      )}
+
+      {/* Month View */}
+      {viewMode === 'month' && (
+        <div className="max-w-7xl mx-auto mb-8">
+          <MonthView habits={habits} selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
+        </div>
+      )}
+
+      {/* Quick Stats - Only on Day View */}
+      {viewMode === 'day' && (
+        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {[
+            { label: 'Streak', value: `${Math.max(...habits.map(h => h.streak))} Tage`, icon: <Flame className="w-5 h-5 text-orange-500" /> },
+            { label: 'Habits', value: `${completedHabits}/${habits.length}`, icon: <CheckCircle2 className="w-5 h-5 text-green-500" /> },
+            { label: 'Workouts', value: '3/Woche', icon: <Dumbbell className="w-5 h-5 text-blue-500" /> },
+            { label: 'Stadt', value: settings.city, icon: <MapPin className="w-5 h-5 text-gold-500" /> },
+          ].map((stat, i) => (
+            <div 
+              key={i} 
+              className="bg-dark-900/50 gold-border rounded-xl p-4 flex items-center gap-3 card-hover"
+            >
+              {stat.icon}
+              <div>
+                <p className="text-dark-400 text-xs">{stat.label}</p>
+                <p className="text-white font-semibold">{stat.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Main Grid - Day View */}
+      {viewMode === 'day' && (
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <PrayerTimesWidget city={settings.city} onSendReminder={handlePrayerReminder} />
+          <HabitTracker habits={habits} setHabits={setHabits} />
+          <WorkoutWidget workouts={workouts} setWorkouts={setWorkouts} />
+          <MealPlanWidget meals={meals} onSendMealReminder={handleMealReminder} />
+          <GoalsWidget />
+          <QuickActions onAction={handleQuickAction} />
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="max-w-7xl mx-auto mt-12 text-center text-dark-500 text-sm">

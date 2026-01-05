@@ -9,7 +9,21 @@ export interface SendMessageParams {
 }
 
 export async function sendWhatsAppMessage({ to, message }: SendMessageParams): Promise<{ success: boolean; error?: string }> {
+  // Check if API key is set
+  if (!SUPERCHAT_API_KEY) {
+    console.error('SUPERCHAT_API_KEY is not set in environment variables')
+    return { success: false, error: 'API Key nicht konfiguriert. Bitte in Vercel Environment Variables setzen.' }
+  }
+
   try {
+    // Format phone number - remove spaces, ensure +
+    let formattedPhone = to.replace(/\s/g, '')
+    if (!formattedPhone.startsWith('+')) {
+      formattedPhone = '+' + formattedPhone
+    }
+
+    console.log('Sending to Superchat:', { to: formattedPhone, messageLength: message.length })
+
     const response = await fetch(`${SUPERCHAT_BASE_URL}/messages`, {
       method: 'POST',
       headers: {
@@ -18,17 +32,18 @@ export async function sendWhatsAppMessage({ to, message }: SendMessageParams): P
       },
       body: JSON.stringify({
         channel: 'whatsapp',
-        to: to.replace(/\s/g, ''), // Remove spaces
+        to: formattedPhone,
         body: {
           text: message,
         },
       }),
     })
 
+    const responseText = await response.text()
+    console.log('Superchat Response:', response.status, responseText)
+
     if (!response.ok) {
-      const error = await response.text()
-      console.error('Superchat API Error:', error)
-      return { success: false, error }
+      return { success: false, error: `Superchat API Error (${response.status}): ${responseText}` }
     }
 
     return { success: true }

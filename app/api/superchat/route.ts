@@ -6,6 +6,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { type, to, data } = body
 
+    if (!to) {
+      return NextResponse.json({ success: false, error: 'Telefonnummer fehlt' }, { status: 400 })
+    }
+
     let message = ''
 
     switch (type) {
@@ -31,18 +35,19 @@ export async function POST(request: NextRequest) {
         message = data.message
         break
       default:
-        return NextResponse.json({ error: 'Unknown message type' }, { status: 400 })
+        return NextResponse.json({ success: false, error: 'Unbekannter Nachrichtentyp' }, { status: 400 })
     }
 
+    console.log('Sending message type:', type, 'to:', to)
     const result = await sendWhatsAppMessage({ to, message })
 
     if (result.success) {
-      return NextResponse.json({ success: true, message: 'Message sent!' })
+      return NextResponse.json({ success: true, message: 'Nachricht gesendet!' })
     } else {
       return NextResponse.json({ success: false, error: result.error }, { status: 500 })
     }
   } catch (error) {
     console.error('API Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ success: false, error: 'Server Fehler: ' + String(error) }, { status: 500 })
   }
 }
