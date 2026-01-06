@@ -1,20 +1,21 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
       colors: {
         gold: {
-          50: '#fefce8',
-          100: '#fef9c3',
-          200: '#fef08a',
-          300: '#fde047',
-          400: '#facc15',
-          500: '#d4a017',
-          600: '#ca8a04',
+          50: '#fffef7',
+          100: '#fefce8',
+          200: '#fef3c7',
+          300: '#fde68a',
+          400: '#fcd34d',
+          500: '#D4AF37',
+          600: '#b8960c',
           700: '#a16207',
           800: '#854d0e',
           900: '#713f12',
@@ -31,26 +32,11 @@ module.exports = {
           800: '#1e293b',
           900: '#0f172a',
           950: '#020617',
-        }
+        },
       },
       fontFamily: {
         display: ['var(--font-display)', 'serif'],
-        body: ['var(--font-body)', 'sans-serif'],
-      },
-      animation: {
-        'fade-in': 'fadeIn 0.5s ease-out',
-        'slide-up': 'slideUp 0.5s ease-out',
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-      },
-      keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideUp: {
-          '0%': { opacity: '0', transform: 'translateY(20px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
+        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
       },
     },
   },
