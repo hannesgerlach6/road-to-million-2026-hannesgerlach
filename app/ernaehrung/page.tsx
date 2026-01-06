@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { 
   ChevronLeft, 
@@ -22,7 +22,7 @@ import {
   type Recipe 
 } from '@/data/ernaehrung'
 
-export default function ErnaehrungPage() {
+function ErnaehrungContent() {
   const searchParams = useSearchParams()
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null)
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -219,6 +219,14 @@ export default function ErnaehrungPage() {
       
       <BottomNav />
     </div>
+  )
+}
+
+export default function ErnaehrungPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-dark-950 flex items-center justify-center"><div className="text-gold-500">Laden...</div></div>}>
+      <ErnaehrungContent />
+    </Suspense>
   )
 }
 
