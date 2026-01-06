@@ -1,7 +1,7 @@
-import NextAuth, { NextAuthOptions } from 'next-auth'
+import NextAuth from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 
-export const authOptions: NextAuthOptions = {
+const handler = NextAuth({
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
@@ -17,7 +17,6 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, account }) {
-      // Persist the OAuth access_token and refresh_token to the token
       if (account) {
         token.accessToken = account.access_token
         token.refreshToken = account.refresh_token
@@ -26,7 +25,6 @@ export const authOptions: NextAuthOptions = {
       return token
     },
     async session({ session, token }) {
-      // Send properties to the client
       session.accessToken = token.accessToken as string
       session.refreshToken = token.refreshToken as string
       return session
@@ -36,8 +34,6 @@ export const authOptions: NextAuthOptions = {
     signIn: '/einstellungen',
   },
   secret: process.env.NEXTAUTH_SECRET,
-}
-
-const handler = NextAuth(authOptions)
+})
 
 export { handler as GET, handler as POST }
